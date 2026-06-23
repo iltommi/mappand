@@ -3,6 +3,7 @@ package io.github.tommaso.mappand.ui.map
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.tommaso.mappand.MappandApp
+import io.github.tommaso.mappand.data.auth.AuthDataStore
 import io.github.tommaso.mappand.data.db.PhotoEntity
 import io.github.tommaso.mappand.domain.ScanProgress
 import io.github.tommaso.mappand.domain.ScanRepository
@@ -25,9 +26,31 @@ class MapViewModel(private val app: MappandApp) : ViewModel() {
 
     val scanProgress: StateFlow<ScanProgress> = scanRepo.progress
 
+    val selectedFolder: StateFlow<AuthDataStore.SelectedFolder?> =
+        app.authDataStore.selectedFolderFlow
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _showFolderPicker = MutableStateFlow(false)
+    val showFolderPicker: StateFlow<Boolean> = _showFolderPicker
+
+    fun openFolderPicker() { _showFolderPicker.value = true }
+    fun closeFolderPicker() { _showFolderPicker.value = false }
+
+    fun selectFolder(id: Long, name: String) {
+        viewModelScope.launch {
+            app.authDataStore.setSelectedFolder(id, name)
+            _showFolderPicker.value = false
+        }
+    }
+
     fun startScan() {
+        val folder = selectedFolder.value
+        if (folder == null) {
+            _showFolderPicker.value = true
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
-            scanRepo.scan()
+            scanRepo.scan(folder.id)
             SyncWorker.schedule(app)
         }
     }

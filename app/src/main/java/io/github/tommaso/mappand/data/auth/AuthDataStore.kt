@@ -2,6 +2,7 @@ package io.github.tommaso.mappand.data.auth
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -17,8 +18,21 @@ class AuthDataStore(private val context: Context) {
         val TOKEN = stringPreferencesKey("pcloud_token")
         val HOST = stringPreferencesKey("pcloud_host")
         val DEVICE_ID = stringPreferencesKey("pcloud_deviceid")
+        val FOLDER_ID = longPreferencesKey("selected_folder_id")
+        val FOLDER_NAME = stringPreferencesKey("selected_folder_name")
         const val EU_HOST = "https://eapi.pcloud.com"
         const val US_HOST = "https://api.pcloud.com"
+    }
+
+    data class SelectedFolder(val id: Long, val name: String)
+
+    val selectedFolderFlow: Flow<SelectedFolder?> = context.dataStore.data.map { prefs ->
+        val id = prefs[FOLDER_ID] ?: return@map null
+        SelectedFolder(id, prefs[FOLDER_NAME] ?: "")
+    }
+
+    suspend fun setSelectedFolder(id: Long, name: String) {
+        context.dataStore.edit { it[FOLDER_ID] = id; it[FOLDER_NAME] = name }
     }
 
     val tokenFlow: Flow<String?> = context.dataStore.data.map { it[TOKEN] }

@@ -152,6 +152,13 @@ class PCloudClient(private val auth: AuthDataStore) {
         return resp.metadata?.folderId ?: throw Exception("No folderId")
     }
 
+    suspend fun listFolders(folderId: Long): List<PCloudMeta> {
+        val url = buildUrl("listfolder", mapOf("folderid" to folderId.toString(), "nofiles" to "1"))
+        val resp = get(url)
+        if (resp.result != 0) throw Exception("pCloud ${resp.result}: ${resp.error}")
+        return (resp.metadata?.contents ?: emptyList()).filter { it.isfolder }
+    }
+
     suspend fun getRootFolderId(): Long {
         val url = buildUrl("listfolder", mapOf("folderid" to "0", "nofiles" to "1"))
         val resp = get(url)

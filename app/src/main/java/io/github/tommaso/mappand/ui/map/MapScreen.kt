@@ -3,6 +3,7 @@ package io.github.tommaso.mappand.ui.map
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -18,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.tommaso.mappand.MappandApp
 import io.github.tommaso.mappand.data.db.PhotoEntity
+import io.github.tommaso.mappand.ui.folder.FolderPickerDialog
 import io.github.tommaso.mappand.ui.grid.GridScreen
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -38,6 +40,8 @@ fun MapScreen(onLogout: () -> Unit) {
     val photos by vm.geotaggedPhotos.collectAsStateWithLifecycle()
     val orphanCount by vm.orphanCount.collectAsStateWithLifecycle()
     val scanProgress by vm.scanProgress.collectAsStateWithLifecycle()
+    val selectedFolder by vm.selectedFolder.collectAsStateWithLifecycle()
+    val showFolderPicker by vm.showFolderPicker.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
     var showGrid by remember { mutableStateOf(false) }
 
@@ -59,16 +63,28 @@ fun MapScreen(onLogout: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
-                Text("${photos.size} geotagged · $orphanCount to tag",
-                    style = MaterialTheme.typography.bodySmall)
+            Column(modifier = Modifier.weight(1f)) {
+                if (selectedFolder != null) {
+                    Text(
+                        "📁 ${selectedFolder!!.name}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Text(
+                    "${photos.size} geotagged · $orphanCount to tag",
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 if (scanProgress.running) {
-                    Text("Scanning ${scanProgress.scanned}/${scanProgress.total ?: "?"}…",
+                    Text(
+                        "Scanning ${scanProgress.scanned}/${scanProgress.total ?: "?"}…",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary)
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
                 scanProgress.error?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    Text(it, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -88,6 +104,11 @@ fun MapScreen(onLogout: () -> Unit) {
                         Icon(Icons.Default.MoreVert, "Menu")
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Choose folder") },
+                            leadingIcon = { Icon(Icons.Default.Folder, null) },
+                            onClick = { showMenu = false; vm.openFolderPicker() },
+                        )
                         DropdownMenuItem(text = { Text("Erase cache") }, onClick = {
                             showMenu = false; vm.eraseCache()
                         })
@@ -110,6 +131,14 @@ fun MapScreen(onLogout: () -> Unit) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter))
             }
         }
+    }
+
+    if (showFolderPicker) {
+        FolderPickerDialog(
+            client = app.pCloudClient,
+            onSelect = { id, name -> vm.selectFolder(id, name) },
+            onDismiss = { vm.closeFolderPicker() },
+        )
     }
 }
 

@@ -26,7 +26,7 @@ class ScanRepository(
 
     fun cancel() { cancelled = true }
 
-    suspend fun scan(rootFolderId: Long = 0) {
+    suspend fun scan(rootFolderId: Long) {
         cancelled = false
         _progress.value = ScanProgress(running = true)
         try {
