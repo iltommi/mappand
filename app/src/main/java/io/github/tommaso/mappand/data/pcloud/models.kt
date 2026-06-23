@@ -9,6 +9,7 @@ data class PCloudResponse(
     val error: String? = null,
     val auth_token: String? = null,
     val token: String? = null,
+    @Json(name = "tfatoken") val tfaToken: String? = null,
     val metadata: PCloudMeta? = null,
     val hosts: List<String>? = null,
     val path: String? = null,

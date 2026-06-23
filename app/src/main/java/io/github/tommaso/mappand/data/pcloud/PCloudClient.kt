@@ -48,7 +48,7 @@ class PCloudClient(private val auth: AuthDataStore) {
         val resp = get(url)
         return when (resp.result) {
             0 -> resp.auth_token ?: resp.token ?: throw Exception("No token in response")
-            2328 -> throw TwoFactorRequired(resp.auth_token ?: throw Exception("No TFA token"))
+            2328 -> throw TwoFactorRequired(resp.tfaToken ?: throw Exception("No TFA token"))
             else -> throw Exception("pCloud ${resp.result}: ${resp.error}")
         }
     }

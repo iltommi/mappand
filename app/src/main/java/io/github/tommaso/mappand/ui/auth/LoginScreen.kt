@@ -53,12 +53,19 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         Text("Sign in with your pCloud account", style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(24.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(selected = isEu, onClick = { isEu = true; vm.selectedHost = AuthDataStore.EU_HOST })
-            Text("EU")
-            Spacer(Modifier.width(16.dp))
-            RadioButton(selected = !isEu, onClick = { isEu = false; vm.selectedHost = AuthDataStore.US_HOST })
-            Text("US")
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SegmentedButton(
+                selected = isEu,
+                onClick = { isEu = true; vm.selectedHost = AuthDataStore.EU_HOST },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                label = { Text("EU") },
+            )
+            SegmentedButton(
+                selected = !isEu,
+                onClick = { isEu = false; vm.selectedHost = AuthDataStore.US_HOST },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                label = { Text("US") },
+            )
         }
         Spacer(Modifier.height(16.dp))
 
