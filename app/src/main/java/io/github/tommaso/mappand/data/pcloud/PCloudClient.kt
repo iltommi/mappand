@@ -6,6 +6,7 @@ import io.github.tommaso.mappand.data.auth.AuthDataStore
 import okhttp3.MediaType.Companion.toMediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -42,23 +43,33 @@ class PCloudClient(private val auth: AuthDataStore) {
     suspend fun loginWithPassword(email: String, password: String): String {
         val deviceId = auth.getDeviceId()
         val host = auth.getHost()
-        val url = "$host/userinfo?" +
-            "username=${enc(email)}&password=${enc(password)}&getauth=1&logout=1" +
-            "&device=Mappand&deviceid=${enc(deviceId)}"
-        val resp = get(url)
+        val body = FormBody.Builder()
+            .add("username", email)
+            .add("password", password)
+            .add("getauth", "1")
+            .add("logout", "1")
+            .add("os", "4")
+            .add("deviceid", deviceId)
+            .build()
+        val resp = withContext(Dispatchers.IO) {
+            val req = Request.Builder().url("$host/login").post(body).build()
+            val json = http.newCall(req).execute().use { it.body?.string() ?: "{}" }
+            responseAdapter.fromJson(json) ?: throw Exception("Empty response")
+        }
         return when (resp.result) {
-            0 -> resp.auth_token ?: resp.token ?: throw Exception("No token in response")
-            2328 -> throw TwoFactorRequired(resp.tfaToken ?: throw Exception("No TFA token"))
+            0 -> resp.auth ?: resp.token ?: throw Exception("No token in response")
+            2297 -> throw TwoFactorRequired(resp.token ?: throw Exception("No TFA token"))
             else -> throw Exception("pCloud ${resp.result}: ${resp.error}")
         }
     }
 
     suspend fun loginWithTfa(tfaToken: String, code: String): String {
         val host = auth.getHost()
-        val url = "$host/tfa_login?tfatoken=${enc(tfaToken)}&code=${enc(code)}&getauth=1"
+        val digits = code.filter { it.isDigit() }
+        val url = "$host/tfa_login?token=${enc(tfaToken)}&code=${enc(digits)}&trustdevice=false"
         val resp = get(url)
         return when (resp.result) {
-            0 -> resp.auth_token ?: resp.token ?: throw Exception("No token")
+            0 -> resp.auth ?: resp.token ?: resp.authtoken ?: throw Exception("No token")
             else -> throw Exception("pCloud ${resp.result}: ${resp.error}")
         }
     }

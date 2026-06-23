@@ -7,9 +7,9 @@ import com.squareup.moshi.JsonClass
 data class PCloudResponse(
     val result: Int = 0,
     val error: String? = null,
-    val auth_token: String? = null,
+    val auth: String? = null,
     val token: String? = null,
-    @Json(name = "tfatoken") val tfaToken: String? = null,
+    val authtoken: String? = null,
     val metadata: PCloudMeta? = null,
     val hosts: List<String>? = null,
     val path: String? = null,
